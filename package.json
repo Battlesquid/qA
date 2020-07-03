@@ -11,6 +11,9 @@
   "dependencies": {
     "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
-    "discord.js": "^12.2.0"
+    "cron": "^1.8.2",
+    "discord.js": "^12.2.0",
+    "dotenv": "^8.2.0",
+    "firebase": "^7.15.5"
   }
 }
