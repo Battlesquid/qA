@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { job } = require('cron');
-const { Client } = require('discord.js');
+const { Client, Permissions } = require('discord.js');
 const { fetchUnansweredQuestions, difference, generateQuestionEmbeds, removeAll } = require('./util/util.js');
 const db = require('./util/db.js');
 
@@ -40,7 +40,6 @@ const watch = async () => {
             //create embeds using the answered question ids
             const embeds = generateQuestionEmbeds(answeredIDs, baseQuestionsRequest);
 
-          
             for (const [guildID, channelID] of Object.entries(channelIDs)) {
                 // fetch each channel subscribed to updates, send each answered question
                 const channel = await bot.channels.fetch(channelID);
@@ -60,33 +59,47 @@ bot.on('ready', () => {
             name: "you prolly"
         }
     })
-     // when the bot is ready, watch for answered questions every minute
+    // when the bot is ready, watch for answered questions every minute
     watch();
 })
 
 bot.on('message', async message => {
+    try {
 
-    //if the author is a bot or there is no channel specified, return
-    if (message.author.bot) return;
-    const channel = message.mentions.channels.first();
-    if (!channel) return;
+        //if the author is a bot or qA isn't mentioned
+        if (message.author.bot || !message.content.startsWith(process.env.PREFIX)) return;
 
-    //get the channel id
-    const channelID = channel.id.match(/\d+/g)[0];
+        //also if they aren't an admin return cause it'll be chaos if normal users change this
+        if (!(message.member.hasPermission(Permissions.FLAGS.MANAGE_GUILD))) return;
 
-    // get the channel that the server is using for updates, if there is none set an empty string
-    const channelSnapshot = await db.get(message.guild.id, "value");
-    const guildChannel = channelSnapshot.exists() ? channelSnapshot.val() : "";
+        // if there's no channel, get the subscribed channel, if any, and return
+        const channel = message.mentions.channels.first();
+        if (!channel) {
+            const channelSnapshot = await db.get(message.guild.id, "value");
+            if (channelSnapshot.exists()) {
+                return message.channel.send(`Q&A updates are being sent to <#${channelSnapshot.val()}>`);
+            } else {
+                return message.channel.send("Q&A updates are disabled for this server. Enable them by sending <@728411099652816897> `[#channel]`");
+            }
+        }
 
-    // if the channel is the same as the one in the db, remove it
-    // else, add the channel id, this will override any channel previously stored
-    if (guildChannel === channelID) {
-        await db.delete(message.guild.id);
-        message.reply("Updates will no longer be sent in the server.");
-    } else {
-        await db.set(message.guild.id, channelID);
-        message.reply(`Updates will now be sent in ${channel}`);
-    }
+        //get the channel id
+        const channelID = channel.id.match(/\d+/g)[0];
+
+        // get the channel that the server is using for updates, if there is none set an empty string
+        const channelSnapshot = await db.get(message.guild.id, "value");
+        const guildChannel = channelSnapshot.exists() ? channelSnapshot.val() : "";
+
+        // if the channel is the same as the one in the db, remove it
+        // else, add the channel id, this will override any channel previously stored
+        if (guildChannel === channelID) {
+            await db.delete(message.guild.id);
+            message.reply("Updates will no longer be sent in the server.");
+        } else {
+            await db.set(message.guild.id, channelID);
+            message.reply(`Updates will now be sent in ${channel}`);
+        }
+    } catch (e) { console.log(e); }
 })
 
 bot.login(process.env.TOKEN);

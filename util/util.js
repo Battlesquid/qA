@@ -4,75 +4,90 @@ const { MessageEmbed } = require('discord.js');
 
 module.exports = {
     async fetchCurrentURL() {
-        const res = await get('https://www.robotevents.com/robot-competitions/vex-robotics-competition');
-        const $ = cheerio.load(res.data);
-        const url = $('i.fa-question').parent().attr('href');
-        return url;
+        try {
+            const res = await get('https://www.robotevents.com/robot-competitions/vex-robotics-competition');
+            const $ = cheerio.load(res.data);
+            const url = $('i.fa-question').parent().attr('href');
+            return url;
+        } catch (e) { console.log(e); }
     },
     async fetchPageCount(url) {
-        const res = await get(`${url}`);
-        const $ = cheerio.load(res.data);
-        const pageCount = $('.pagination', '.panel-body').find('li').length - 2;
-        return pageCount;
+        try {
+            const res = await get(`${url}`);
+            const $ = cheerio.load(res.data);
+            const pageCount = $('.pagination', '.panel-body').find('li').length - 2;
+            return pageCount;
+        } catch (e) { console.log(e); }
     },
     async fetchUnansweredQuestions() {
-        const base = new Map();
-        const qnaURL = await module.exports.fetchCurrentURL();
-        const pageCount = await module.exports.fetchPageCount(qnaURL);
+        try {
+            const base = new Map();
+            const qnaURL = await module.exports.fetchCurrentURL();
+            const pageCount = await module.exports.fetchPageCount(qnaURL);
 
-        for (let i = 1; i <= pageCount; i++) {
+            for (let i = 1; i <= pageCount; i++) {
 
-            const res = await get(`${qnaURL}?page=${i}`);
-            const $ = cheerio.load(res.data);
-            const questionTitles = $('.panel-body').children('h4.title:not(:has(a span))');
+                const res = await get(`${qnaURL}?page=${i}`);
+                const $ = cheerio.load(res.data);
+                const questionTitles = $('.panel-body').children('h4.title:not(:has(a span))');
 
-            questionTitles.each((index, child) => {
-                //ps i hate scraping
-                const title = module.exports.unformat($(child).text());
-                const author = module.exports.unformat($(child).nextUntil('hr').children('.details').children('.author').text());
-                const timestamp = module.exports.unformat($(child).nextUntil('hr').children('.details').children('.timestamp').text());
-                const tags = module.exports.unformat($(child).next().next('.tags').text(), false);
-                const url = $(child).children('a').attr('href');
-                const id = url.match(/QA\/(\d+)/)[1];
+                questionTitles.each((index, child) => {
+                    //ps i hate scraping
+                    const title = module.exports.unformat($(child).text());
+                    const author = module.exports.unformat($(child).nextUntil('hr').children('.details').children('.author').text());
+                    const timestamp = module.exports.unformat($(child).nextUntil('hr').children('.details').children('.timestamp').text());
+                    const tags = module.exports.unformat($(child).next().next('.tags').text(), false);
+                    const url = $(child).children('a').attr('href');
+                    const id = url.match(/QA\/(\d+)/)[1];
 
-                base.set(id, { title, author, timestamp, url, tags });
+                    base.set(id, { title, author, timestamp, url, tags });
 
-            });
-        }
-        return base;
+                });
+            }
+            return base;
+        } catch (e) { console.log(e); }
     },
     generateQuestionEmbeds(ids, questions) {
-        const n = [];
-        ids.forEach(id => {
-            const question = questions.get(id);
-            const embed = new MessageEmbed();
-            embed
-                .setTitle("New Q&A Response!")
-                .setDescription(`Asked by ${question.author} ${question.timestamp}`)
-                .addField("Question: ", `[${question.title}](${question.url})`)
-                .setFooter(`Tags 🏷️ | ${question.tags.length ? question.tags.join(', ') : "none"}`);
+        try {
+            const n = [];
+            ids.forEach(id => {
+                const question = questions.get(id);
+                const embed = new MessageEmbed();
+                embed
+                    .setTitle("New Q&A Response!")
+                    .setDescription(`Asked by ${question.author} ${question.timestamp}`)
+                    .addField("Question: ", `[${question.title}](${question.url})`)
+                    .setFooter(`Tags 🏷️ | ${question.tags.length ? question.tags.join(', ') : "none"}`);
 
-            n.push(embed);
-        })
-        return n;
+                n.push(embed);
+            })
+            return n;
+        } catch (e) { console.log(e); }
     },
     difference(baseMap, newMap) {
-        const keys = [];
-        baseMap.forEach((value, key) => {
-            if (!(newMap.get(key)))
-                keys.push(key);
-        })
-        return keys.length ? keys : false;
+        try {
+            const keys = [];
+            baseMap.forEach((value, key) => {
+                if (!(newMap.get(key)))
+                    keys.push(key);
+            })
+            return keys.length ? keys : false;
+        } catch (e) { console.log(e); }
     },
     removeAll(keys, map) {
-        keys.forEach(key => map.delete(key));
+        try {
+            keys.forEach(key => map.delete(key));
+        } catch (e) { console.log(e); }
     },
     unformat(string, firstIndex = true) {
-        string = string.split(/\n/g) //split on newline
-            .map(n => n.trim()) //remove whitespace
-            .filter(n => n.length); //remove the empty elements
+        try {
+            string = string.split(/\n/g) //split on newline
+                .map(n => n.trim()) //remove whitespace
+                .filter(n => n.length); //remove the empty elements
 
-        if (string === undefined) return;
-        return firstIndex ? string[0] : string;
+            if (string === undefined) return;
+            return firstIndex ? string[0] : string;
+        }
+        catch (e) { console.log(e); }
     }
 }

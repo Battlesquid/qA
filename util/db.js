@@ -3,12 +3,18 @@ firebase.initializeApp(JSON.parse(process.env.CONFIG));
 
 module.exports = {
     set(location, value) {
-        return firebase.database().ref(location).set(value);
+        try {
+            return firebase.database().ref(location).set(value);
+        } catch (e) { console.log(e); }
     },
     get(location, event) {
-        return firebase.database().ref(location).once(event);
+        try {
+            return firebase.database().ref(location).once(event);
+        } catch (e) { console.log(e); }
     },
     delete(location) {
-        return firebase.database().ref(location).remove();
+        try {
+            return firebase.database().ref(location).remove();
+        } catch (e) { console.log(e); }
     }
 }
