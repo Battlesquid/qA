@@ -9,7 +9,7 @@ module.exports = {
             const $ = cheerio.load(res.data);
             const url = $('i.fa-question').parent().attr('href');
             return url;
-        } catch (e) { console.log(e); }
+        } catch (e) { return console.log(e); }
     },
     async fetchPageCount(url) {
         try {
@@ -17,17 +17,16 @@ module.exports = {
             const $ = cheerio.load(res.data);
             const pageCount = $('.pagination', '.panel-body').find('li').length - 2;
             return pageCount;
-        } catch (e) { console.log(e); }
+        } catch (e) { return console.log(e); }
     },
-    async fetchUnansweredQuestions() {
+    async fetchUnansweredQuestions(url) {
         try {
             const base = new Map();
-            const qnaURL = await module.exports.fetchCurrentURL();
-            const pageCount = await module.exports.fetchPageCount(qnaURL);
+            const pageCount = await module.exports.fetchPageCount(url);
 
             for (let i = 1; i <= pageCount; i++) {
 
-                const res = await get(`${qnaURL}?page=${i}`);
+                const res = await get(`${url}?page=${i}`);
                 const $ = cheerio.load(res.data);
                 const questionTitles = $('.panel-body').children('h4.title:not(:has(a span))');
 
@@ -45,7 +44,7 @@ module.exports = {
                 });
             }
             return base;
-        } catch (e) { console.log(e); }
+        } catch (e) { return console.log(e); }
     },
     generateQuestionEmbeds(ids, questions) {
         try {
@@ -72,12 +71,12 @@ module.exports = {
                     keys.push(key);
             })
             return keys.length ? keys : false;
-        } catch (e) { console.log(e); }
+        } catch (e) { return console.log(e); }
     },
     removeAll(keys, map) {
         try {
             keys.forEach(key => map.delete(key));
-        } catch (e) { console.log(e); }
+        } catch (e) { return console.log(e); }
     },
     unformat(string, firstIndex = true) {
         try {
@@ -88,6 +87,6 @@ module.exports = {
             if (string === undefined) return;
             return firstIndex ? string[0] : string;
         }
-        catch (e) { console.log(e); }
+        catch (e) { return console.log(e); }
     }
 }

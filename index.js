@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { job } = require('cron');
 const { Client, Permissions } = require('discord.js');
-const { fetchUnansweredQuestions, difference, generateQuestionEmbeds, removeAll } = require('./util/util.js');
+const { fetchUnansweredQuestions, difference, generateQuestionEmbeds, removeAll, fetchCurrentURL } = require('./util/util.js');
 const db = require('./util/db.js');
 
 const bot = new Client();
@@ -10,7 +10,8 @@ const watch = async () => {
     try {
         // make an initial request to fetch the unanswered questions
         console.log('initial req');
-        let baseQuestionsRequest = await fetchUnansweredQuestions();
+        let baseURL = await fetchCurrentURL();
+        let baseQuestionsRequest = await fetchUnansweredQuestions(baseURL);
 
         job("0 */1 * * * *", async () => {
 
@@ -19,13 +20,14 @@ const watch = async () => {
             const hour = time.getUTCHours(), minutes = time.getUTCMinutes();
             console.log(`Job fired at ${hour}:${minutes < 10 ? "0" : ""}${minutes} UTC`);
 
-            if (hour === 7 && minutes === 0) { //az midnight time
+            if (hour === 5 && minutes === 0) { //az 10:00 time
                 console.log('refetching questions');
-                baseQuestionsRequest = await fetchUnansweredQuestions();
+                baseURL = await fetchCurrentURL();
+                baseQuestionsRequest = await fetchUnansweredQuestions(baseURL);
             }
 
             //get the most recent unanswered questions
-            const newQuestionsRequest = await fetchUnansweredQuestions();
+            const newQuestionsRequest = await fetchUnansweredQuestions(baseURL);
 
             // find if the newQuestionsRequest is missing a question from baseQuestionsRequest, 
             // if they are the same, return
@@ -45,6 +47,7 @@ const watch = async () => {
             const embeds = generateQuestionEmbeds(answeredIDs, baseQuestionsRequest);
 
             for (const [guildID, channelID] of Object.entries(channelIDs)) {
+                console.log(channelID);
                 // fetch each channel subscribed to updates, send each answered question
                 const channel = await bot.channels.fetch(channelID);
                 embeds.forEach(async embed => await channel.send(embed));
@@ -53,14 +56,14 @@ const watch = async () => {
                 removeAll(answeredIDs, baseQuestionsRequest);
             }
         }, null, true, "America/Phoenix");
-    } catch (e) { console.log(e); }
+    } catch (e) { return console.log(e); }
 }
 
 bot.on('ready', () => {
     bot.user.setPresence({
         activity: {
             type: "WATCHING",
-            name: "the GDC 👀"
+            name: `the GDC 👀 | ${bot.guilds.cache.size} servers`
         }
     })
     // when the bot is ready, watch for answered questions every minute
@@ -80,7 +83,6 @@ bot.on('message', async message => {
         const manageServerWebhooks = message.member.hasPermission(Permissions.FLAGS.MANAGE_WEBHOOKS);
         const manageChannelWebhooks = message.channel.permissionsFor(message.member).has(Permissions.FLAGS.MANAGE_WEBHOOKS);
 
-        console.log(isMayowa, manageChannelWebhooks, manageServerWebhooks)
         //a valid user means it's either me or a person who has server/channel webhook perms
         const validUser = (isMayowa || manageServerWebhooks || manageChannelWebhooks);
         if (!validUser) return;
@@ -113,7 +115,7 @@ bot.on('message', async message => {
             message.reply(`Updates will now be sent in ${channel}`);
         }
         // }
-    } catch (e) { console.log(e); }
+    } catch (e) { return console.log(e); }
 })
 
 bot.login(process.env.TOKEN);
