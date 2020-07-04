@@ -17,6 +17,8 @@ const watch = async () => {
             //if it's a new day, refetch the base questions
             const time = new Date(Date.now());
             const hour = time.getUTCHours(), minutes = time.getUTCMinutes();
+            console.log(`Job fired at ${hour}:${minutes < 10 ? "0" : ""}${minutes} UTC`);
+
             if (hour === 7 && minutes === 0) { //az midnight time
                 console.log('refetching questions');
                 baseQuestionsRequest = await fetchUnansweredQuestions();
@@ -30,7 +32,9 @@ const watch = async () => {
             // if they aren't, the questions present in baseQuestionsRequest but 
             // not in newQuestionsRequest are the answered questions
             const answeredIDs = difference(baseQuestionsRequest, newQuestionsRequest);
-            if (!answeredIDs) return;
+            if (!answeredIDs)
+                return console.log("No new responses");
+            console.log("New response!!");
 
             //get the server channel ids in the db
             const channelsSnapshot = await db.get("/", "value");
@@ -56,7 +60,7 @@ bot.on('ready', () => {
     bot.user.setPresence({
         activity: {
             type: "WATCHING",
-            name: "you prolly"
+            name: "the GDC 👀"
         }
     })
     // when the bot is ready, watch for answered questions every minute
@@ -65,12 +69,21 @@ bot.on('ready', () => {
 
 bot.on('message', async message => {
     try {
+        // if the author is a bot or qA isn't mentioned or there isn't a mention or the mention's ID isn't qA's ID
+        // return
+        if (message.author.bot) return;
+        const mention = message.mentions.users.first();
+        if (!mention) return;
+        if (!(mention.id === bot.user.id)) return;
 
-        //if the author is a bot or qA isn't mentioned
-        if (message.author.bot || !message.content.startsWith(process.env.PREFIX)) return;
+        const isMayowa = message.author.id === '423699849767288853';
+        const manageServerWebhooks = message.member.hasPermission(Permissions.FLAGS.MANAGE_WEBHOOKS);
+        const manageChannelWebhooks = message.channel.permissionsFor(message.member).has(Permissions.FLAGS.MANAGE_WEBHOOKS);
 
-        //also if they aren't an admin return cause it'll be chaos if normal users change this
-        if (!(message.member.hasPermission(Permissions.FLAGS.MANAGE_GUILD))) return;
+        console.log(isMayowa, manageChannelWebhooks, manageServerWebhooks)
+        //a valid user means it's either me or a person who has server/channel webhook perms
+        const validUser = (isMayowa || manageServerWebhooks || manageChannelWebhooks);
+        if (!validUser) return;
 
         // if there's no channel, get the subscribed channel, if any, and return
         const channel = message.mentions.channels.first();
@@ -99,6 +112,7 @@ bot.on('message', async message => {
             await db.set(message.guild.id, channelID);
             message.reply(`Updates will now be sent in ${channel}`);
         }
+        // }
     } catch (e) { console.log(e); }
 })
 
