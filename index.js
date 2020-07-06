@@ -13,7 +13,7 @@ const watch = async () => {
         let baseURL = await fetchCurrentURL();
         let baseQuestionsRequest = await fetchUnansweredQuestions(baseURL);
 
-        job("0 */1 * * * *", async () => {
+        job("0 0 */1 * * *", async () => {
 
             //if it's a new day, refetch the base questions
             const time = new Date(Date.now());
