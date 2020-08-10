@@ -42,46 +42,37 @@ module.exports = {
         return base;
     },
     generateQuestionEmbeds(ids, questions) {
-        try {
-            const n = [];
-            ids.forEach(id => {
-                const question = questions.get(id);
-                const embed = new MessageEmbed();
-                embed
-                    .setTitle("New Q&A Response!")
-                    .setDescription(`Asked by ${question.author} ${question.timestamp}`)
-                    .addField("Question: ", `[${question.title}](${question.url})`)
-                    .setFooter(`Tags 🏷️ | ${question.tags.length ? question.tags.join(', ') : "none"}`);
+        const n = [];
+        ids.forEach(id => {
+            const question = questions.get(id);
+            const embed = new MessageEmbed();
+            embed
+                .setTitle("New Q&A Response!")
+                .setDescription(`Asked by ${question.author} ${question.timestamp}`)
+                .addField("Question: ", `[${question.title}](${question.url})`)
+                .setFooter(`Tags 🏷️ | ${question.tags.length ? question.tags.join(', ') : "none"}`);
 
-                n.push(embed);
-            })
-            return n;
-        } catch (e) { console.log(e); }
+            n.push(embed);
+        })
+        return n;
     },
     difference(baseMap, newMap) {
-        try {
-            const keys = [];
-            baseMap.forEach((value, key) => {
-                if (!(newMap.get(key)))
-                    keys.push(key);
-            })
-            return keys.length ? keys : false;
-        } catch (e) { return console.log(e); }
+        const keys = [];
+        baseMap.forEach((value, key) => {
+            if (!(newMap.get(key)))
+                keys.push(key);
+        })
+        return keys.length ? keys : false;
     },
     removeAll(keys, map) {
-        try {
-            keys.forEach(key => map.delete(key));
-        } catch (e) { return console.log(e); }
+        keys.forEach(key => map.delete(key));
     },
     unformat(string, firstIndex = true) {
-        try {
-            string = string.split(/\n/g) //split on newline
-                .map(n => n.trim()) //remove whitespace
-                .filter(n => n.length); //remove the empty elements
+        string = string.split(/\n/g) //split on newline
+            .map(n => n.trim()) //remove whitespace
+            .filter(n => n.length); //remove the empty elements
 
-            if (string === undefined) return;
-            return firstIndex ? string[0] : string;
-        }
-        catch (e) { return console.log(e); }
+        if (string === undefined) return;
+        return firstIndex ? string[0] : string;
     }
 }

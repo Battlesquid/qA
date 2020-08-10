@@ -4,7 +4,7 @@ const { Client, Permissions } = require('discord.js');
 const { fetchUnansweredQuestions, difference, generateQuestionEmbeds, removeAll, fetchCurrentURL } = require('./util/util.js');
 const db = require('./util/db.js');
 
-const bot = new Client();
+const bot = new Client({ messageCacheMaxSize: 0 });
 
 const watch = async () => {
     try {
@@ -17,15 +17,16 @@ const watch = async () => {
 
             //if it's a new day, refetch the base questions
             const time = new Date(Date.now());
-            const hour = time.getUTCHours(), minutes = time.getUTCMinutes();
-            console.log(`Job fired at ${hour}:${minutes < 10 ? "0" : ""}${minutes} UTC`);
+            const hour = time.getUTCHours();
+            console.log(`Job fired at ${hour}:00 UTC`);
 
-            if (hour === 5 && minutes === 0) { //az 10:00 time
+            if (hour === 5) { //az 10:00 time
                 console.log('refetching questions');
                 baseURL = await fetchCurrentURL();
                 baseQuestionsRequest = await fetchUnansweredQuestions(baseURL);
-            }
 
+            }
+            console.log(baseQuestionsRequest);
             //get the most recent unanswered questions
             const newQuestionsRequest = await fetchUnansweredQuestions(baseURL);
 
